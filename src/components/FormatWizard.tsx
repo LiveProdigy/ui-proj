@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { X, Mail, MessageSquare, Hash, ChevronRight, ChevronLeft } from 'lucide-react';
+import { X, ChevronRight, ChevronLeft, Plus, Trash2 } from 'lucide-react';
 import { CommunicationFormat } from '../types';
+import teamsIcon from '../assets/microsoft-teams-svgrepo-com.svg';
+import outlookIcon from '../assets/ms-outlook-svgrepo-com.svg';
+import gmailIcon from '../assets/gmail-svgrepo-com.svg';
+import slackIcon from '../assets/slack-svgrepo-com.svg';
 
 interface FormatWizardProps {
   format: CommunicationFormat | null;
@@ -10,6 +14,9 @@ interface FormatWizardProps {
 
 export default function FormatWizard({ format, onSave, onClose }: FormatWizardProps) {
   const [step, setStep] = useState(1);
+  const [selectedChannel, setSelectedChannel] = useState<string>('');
+  const [recipientGroups, setRecipientGroups] = useState<Array<{ recipients: string[]; description: string; tags: string }>>([{ recipients: [], description: '', tags: '' }]);
+  const [channelStyles, setChannelStyles] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<Partial<CommunicationFormat>>(
     format || {
       name: '',
@@ -20,11 +27,10 @@ export default function FormatWizard({ format, onSave, onClose }: FormatWizardPr
   );
 
   const availableChannels = [
-    { id: 'teams', name: 'Microsoft Teams', icon: MessageSquare, available: true },
-    { id: 'outlook', name: 'Outlook Mail', icon: Mail, available: true },
-    { id: 'slack', name: 'Slack', icon: Hash, available: true },
-    { id: 'discord', name: 'Discord', icon: MessageSquare, available: false },
-    { id: 'webhook', name: 'Webhook', icon: Mail, available: false }
+    { id: 'teams', name: 'Microsoft Teams', icon: teamsIcon },
+    { id: 'outlook', name: 'Outlook Mail', icon: outlookIcon },
+    { id: 'gmail', name: 'Gmail', icon: gmailIcon },
+    { id: 'slack', name: 'Slack', icon: slackIcon }
   ];
 
   const sampleRecipients = [
@@ -32,7 +38,8 @@ export default function FormatWizard({ format, onSave, onClose }: FormatWizardPr
     'sarah@company.com',
     'team@company.com',
     'dev-team',
-    'stakeholders'
+    'stakeholders',
+    'clients@company.com'
   ];
 
   const toggleChannel = (channelId: string) => {
@@ -64,15 +71,29 @@ export default function FormatWizard({ format, onSave, onClose }: FormatWizardPr
   };
 
   const handleSave = () => {
-    if (formData.name && formData.channels && formData.recipients && formData.messageStyle) {
-      onSave(formData as CommunicationFormat);
+    if (formData.name && formData.channels && formData.recipients) {
+      onSave({ ...formData, messageStyle: JSON.stringify(channelStyles) } as CommunicationFormat);
     }
+  };
+
+  const addRecipientGroup = () => {
+    setRecipientGroups([...recipientGroups, { recipients: [], description: '', tags: '' }]);
+  };
+
+  const removeRecipientGroup = (index: number) => {
+    setRecipientGroups(recipientGroups.filter((_, i) => i !== index));
+  };
+
+  const updateRecipientGroup = (index: number, field: string, value: any) => {
+    const updated = [...recipientGroups];
+    updated[index] = { ...updated[index], [field]: value };
+    setRecipientGroups(updated);
   };
 
   const canProceed = () => {
     if (step === 1) return (formData.channels?.length || 0) > 0;
-    if (step === 2) return (formData.recipients?.length || 0) > 0;
-    if (step === 3) return formData.messageStyle && formData.messageStyle.length > 0;
+    if (step === 2) return formData.name && recipientGroups.some(g => g.recipients.length > 0);
+    if (step === 3) return formData.channels?.every(ch => channelStyles[ch]?.length > 0);
     return false;
   };
 
@@ -100,29 +121,20 @@ export default function FormatWizard({ format, onSave, onClose }: FormatWizardPr
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Choose Channels</h3>
               <div className="space-y-3">
                 {availableChannels.map((channel) => {
-                  const Icon = channel.icon;
                   const isSelected = formData.channels?.includes(channel.id);
                   return (
                     <button
                       key={channel.id}
-                      onClick={() => channel.available && toggleChannel(channel.id)}
-                      disabled={!channel.available}
+                      onClick={() => toggleChannel(channel.id)}
                       className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition-all ${
-                        !channel.available
-                          ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
-                          : isSelected
+                        isSelected
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                        <Icon className={`w-6 h-6 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
-                      </div>
+                      <img src={channel.icon} alt={channel.name} className="w-8 h-8" />
                       <div className="flex-1 text-left">
                         <div className="font-medium text-gray-900">{channel.name}</div>
-                        {!channel.available && (
-                          <div className="text-sm text-gray-500">Coming Soon</div>
-                        )}
                       </div>
                       {isSelected && (
                         <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
@@ -139,6 +151,7 @@ export default function FormatWizard({ format, onSave, onClose }: FormatWizardPr
           {step === 2 && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Define Recipients</h3>
+
               <div className="mb-6">
                 <input
                   type="text"
@@ -149,60 +162,171 @@ export default function FormatWizard({ format, onSave, onClose }: FormatWizardPr
                 />
               </div>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Recipients
-                </label>
-                <div className="space-y-2">
-                  {sampleRecipients.map((recipient) => {
-                    const isSelected = formData.recipients?.includes(recipient);
-                    return (
-                      <label
-                        key={recipient}
-                        className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleRecipient(recipient)}
-                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500"
-                        />
-                        <span className="text-gray-900">{recipient}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+              <div className="flex gap-2 mb-4 border-b border-gray-200">
+                {formData.channels?.map((ch) => {
+                  const channel = availableChannels.find(c => c.id === ch);
+                  return (
+                    <button
+                      key={ch}
+                      onClick={() => setSelectedChannel(ch)}
+                      className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+                        selectedChannel === ch
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <img src={channel?.icon} alt={ch} className="w-4 h-4" />
+                      <span className="capitalize font-medium">{ch}</span>
+                    </button>
+                  );
+                })}
               </div>
 
-              <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                + Add custom recipient
-              </button>
+              {selectedChannel && (
+                <div className="space-y-4">
+                  {recipientGroups.map((group, idx) => (
+                    <div key={idx} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-gray-900">Recipient Group {idx + 1}</h4>
+                        {recipientGroups.length > 1 && (
+                          <button
+                            onClick={() => removeRecipientGroup(idx)}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Recipients
+                          </label>
+                          <div className="space-y-1">
+                            {sampleRecipients.map((recipient) => {
+                              const isSelected = group.recipients.includes(recipient);
+                              return (
+                                <label
+                                  key={recipient}
+                                  className="flex items-center gap-2 text-sm cursor-pointer"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={(e) => {
+                                      const newRecipients = e.target.checked
+                                        ? [...group.recipients, recipient]
+                                        : group.recipients.filter(r => r !== recipient);
+                                      updateRecipientGroup(idx, 'recipients', newRecipients);
+                                      const allRecipients = recipientGroups.flatMap(g => g.recipients);
+                                      setFormData({ ...formData, recipients: [...new Set([...allRecipients, ...newRecipients])] });
+                                    }}
+                                    className="w-4 h-4 text-blue-600 rounded"
+                                  />
+                                  <span className="text-gray-900">{recipient}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Description
+                          </label>
+                          <input
+                            type="text"
+                            value={group.description}
+                            onChange={(e) => updateRecipientGroup(idx, 'description', e.target.value)}
+                            placeholder="Brief description"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-gray-700 mb-1">
+                            Tags (optional)
+                          </label>
+                          <input
+                            type="text"
+                            value={group.tags}
+                            onChange={(e) => updateRecipientGroup(idx, 'tags', e.target.value)}
+                            placeholder="e.g., urgent, weekly"
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={addRecipientGroup}
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add another recipient group
+                  </button>
+                </div>
+              )}
+
+              {!selectedChannel && formData.channels?.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-8">Please select a channel above</p>
+              )}
             </div>
           )}
 
           {step === 3 && (
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Define Message Style</h3>
-              <p className="text-gray-600 mb-4">
-                Describe how you want the AI to generate messages for this format
-              </p>
-              <textarea
-                value={formData.messageStyle || ''}
-                onChange={(e) => setFormData({ ...formData, messageStyle: e.target.value })}
-                placeholder="Example: Summarize humorously for the client, focusing on key outcomes and next steps. Keep it concise and professional."
-                className="w-full h-48 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
+
+              <div className="flex gap-2 mb-4 border-b border-gray-200">
+                {formData.channels?.map((ch) => {
+                  const channel = availableChannels.find(c => c.id === ch);
+                  return (
+                    <button
+                      key={ch}
+                      onClick={() => setSelectedChannel(ch)}
+                      className={`flex items-center gap-2 px-4 py-2 border-b-2 transition-colors ${
+                        selectedChannel === ch
+                          ? 'border-blue-600 text-blue-600'
+                          : 'border-transparent text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <img src={channel?.icon} alt={ch} className="w-4 h-4" />
+                      <span className="capitalize font-medium">{ch}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {selectedChannel && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Define the message style for <span className="font-semibold capitalize">{selectedChannel}</span>
+                  </p>
+                  <textarea
+                    value={channelStyles[selectedChannel] || ''}
+                    onChange={(e) => setChannelStyles({ ...channelStyles, [selectedChannel]: e.target.value })}
+                    placeholder="Example: Summarize professionally for the client, focusing on key outcomes and next steps. Keep it concise."
+                    className="w-full h-40 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+              )}
 
               <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                <div className="text-sm font-medium text-gray-900 mb-2">Selected Configuration:</div>
+                <div className="text-sm font-medium text-gray-900 mb-2">Configuration Summary:</div>
                 <div className="space-y-2 text-sm text-gray-700">
+                  <div>
+                    <span className="font-medium">Format Name:</span> {formData.name}
+                  </div>
                   <div>
                     <span className="font-medium">Channels:</span>{' '}
                     {formData.channels?.map(c => c.charAt(0).toUpperCase() + c.slice(1)).join(', ')}
                   </div>
                   <div>
-                    <span className="font-medium">Recipients:</span>{' '}
-                    {formData.recipients?.length} selected
+                    <span className="font-medium">Styles Defined:</span>{' '}
+                    {Object.keys(channelStyles).length} of {formData.channels?.length}
                   </div>
                 </div>
               </div>

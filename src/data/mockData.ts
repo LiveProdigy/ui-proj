@@ -121,6 +121,7 @@ export const mockPlugins: Plugin[] = [
     id: '1',
     type: 'teams',
     profileName: 'Company Teams - Main',
+    schema: 'professional',
     isActive: true,
     lastSynced: '2025-10-05T08:30:00Z'
   },
@@ -128,6 +129,7 @@ export const mockPlugins: Plugin[] = [
     id: '2',
     type: 'teams',
     profileName: 'Company Teams - Dev',
+    schema: 'company',
     isActive: true,
     lastSynced: '2025-10-05T08:30:00Z'
   },
@@ -135,6 +137,7 @@ export const mockPlugins: Plugin[] = [
     id: '3',
     type: 'outlook',
     profileName: 'work@company.com',
+    schema: 'professional',
     isActive: true,
     lastSynced: '2025-10-05T07:15:00Z'
   },
@@ -142,6 +145,7 @@ export const mockPlugins: Plugin[] = [
     id: '4',
     type: 'slack',
     profileName: 'Engineering Workspace',
+    schema: 'company',
     isActive: true,
     lastSynced: '2025-10-05T09:00:00Z'
   }

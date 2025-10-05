@@ -1,25 +1,43 @@
 import { useState } from 'react';
-import { Plus, CreditCard as Edit2, Trash2, Mail, MessageSquare, Hash } from 'lucide-react';
+import { Plus, CreditCard as Edit2, Trash2 } from 'lucide-react';
 import { mockFormats } from '../data/mockData';
 import { CommunicationFormat } from '../types';
 import FormatWizard from '../components/FormatWizard';
+import teamsIcon from '../assets/microsoft-teams-svgrepo-com.svg';
+import outlookIcon from '../assets/ms-outlook-svgrepo-com.svg';
+import gmailIcon from '../assets/gmail-svgrepo-com.svg';
+import slackIcon from '../assets/slack-svgrepo-com.svg';
 
 export default function Format() {
   const [formats, setFormats] = useState<CommunicationFormat[]>(mockFormats);
   const [showWizard, setShowWizard] = useState(false);
   const [editingFormat, setEditingFormat] = useState<CommunicationFormat | null>(null);
+  const [editingField, setEditingField] = useState<{ id: string; field: string } | null>(null);
 
   const getChannelIcon = (channel: string) => {
     switch (channel) {
       case 'outlook':
-        return <Mail className="w-4 h-4" />;
+        return outlookIcon;
       case 'teams':
-        return <MessageSquare className="w-4 h-4" />;
+        return teamsIcon;
       case 'slack':
-        return <Hash className="w-4 h-4" />;
+        return slackIcon;
+      case 'gmail':
+        return gmailIcon;
       default:
-        return <Mail className="w-4 h-4" />;
+        return gmailIcon;
     }
+  };
+
+  const handleDoubleClick = (id: string, field: string) => {
+    setEditingField({ id, field });
+  };
+
+  const handleBlur = (id: string, field: string, value: string) => {
+    setFormats(formats.map(f =>
+      f.id === id ? { ...f, [field]: value } : f
+    ));
+    setEditingField(null);
   };
 
   const handleDelete = (id: string) => {
@@ -71,15 +89,30 @@ export default function Format() {
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-3">
-                  <h3 className="text-lg font-semibold text-gray-900">{format.name}</h3>
+                  {editingField?.id === format.id && editingField?.field === 'name' ? (
+                    <input
+                      type="text"
+                      defaultValue={format.name}
+                      onBlur={(e) => handleBlur(format.id, 'name', e.target.value)}
+                      autoFocus
+                      className="text-lg font-semibold text-gray-900 border-b-2 border-blue-500 focus:outline-none"
+                    />
+                  ) : (
+                    <h3
+                      className="text-lg font-semibold text-gray-900 cursor-text"
+                      onDoubleClick={() => handleDoubleClick(format.id, 'name')}
+                    >
+                      {format.name}
+                    </h3>
+                  )}
                   <div className="flex items-center gap-2">
                     {format.channels.map((channel) => (
                       <div
                         key={channel}
-                        className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md text-sm text-gray-700"
+                        className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded-md"
                       >
-                        {getChannelIcon(channel)}
-                        <span className="capitalize">{channel}</span>
+                        <img src={getChannelIcon(channel)} alt={channel} className="w-4 h-4" />
+                        <span className="capitalize text-sm text-gray-700">{channel}</span>
                       </div>
                     ))}
                   </div>
@@ -101,7 +134,22 @@ export default function Format() {
 
                 <div>
                   <div className="text-sm text-gray-600 mb-1">Message Style:</div>
-                  <p className="text-gray-700">{format.messageStyle}</p>
+                  {editingField?.id === format.id && editingField?.field === 'messageStyle' ? (
+                    <textarea
+                      defaultValue={format.messageStyle}
+                      onBlur={(e) => handleBlur(format.id, 'messageStyle', e.target.value)}
+                      autoFocus
+                      className="w-full text-gray-700 border-b-2 border-blue-500 focus:outline-none resize-none"
+                      rows={3}
+                    />
+                  ) : (
+                    <p
+                      className="text-gray-700 cursor-text"
+                      onDoubleClick={() => handleDoubleClick(format.id, 'messageStyle')}
+                    >
+                      {format.messageStyle}
+                    </p>
+                  )}
                 </div>
               </div>
 

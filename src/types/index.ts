@@ -35,8 +35,9 @@ export interface SentCommunication {
 
 export interface Plugin {
   id: string;
-  type: 'teams' | 'outlook' | 'slack';
+  type: 'teams' | 'outlook' | 'slack' | 'gmail';
   profileName: string;
+  schema?: string;
   isActive: boolean;
   lastSynced: string;
 }

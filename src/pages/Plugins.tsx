@@ -1,21 +1,29 @@
 import { useState } from 'react';
-import { MessageSquare, Mail, Hash, Plus, CreditCard as Edit2, Trash2, Power } from 'lucide-react';
+import { Plus, CreditCard as Edit2, Trash2, Power } from 'lucide-react';
 import { mockPlugins } from '../data/mockData';
 import { Plugin } from '../types';
+import PluginConfigModal from '../components/PluginConfigModal';
+import teamsIcon from '../assets/microsoft-teams-svgrepo-com.svg';
+import outlookIcon from '../assets/ms-outlook-svgrepo-com.svg';
+import gmailIcon from '../assets/gmail-svgrepo-com.svg';
+import slackIcon from '../assets/slack-svgrepo-com.svg';
 
 export default function Plugins() {
   const [plugins, setPlugins] = useState<Plugin[]>(mockPlugins);
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   const getPluginIcon = (type: string) => {
     switch (type) {
       case 'teams':
-        return <MessageSquare className="w-6 h-6" />;
+        return teamsIcon;
       case 'outlook':
-        return <Mail className="w-6 h-6" />;
+        return outlookIcon;
       case 'slack':
-        return <Hash className="w-6 h-6" />;
+        return slackIcon;
+      case 'gmail':
+        return gmailIcon;
       default:
-        return <Mail className="w-6 h-6" />;
+        return gmailIcon;
     }
   };
 
@@ -48,10 +56,24 @@ export default function Plugins() {
   };
 
   const pluginTypes = [
-    { type: 'teams', name: 'Microsoft Teams', color: 'bg-purple-500' },
-    { type: 'outlook', name: 'Outlook', color: 'bg-blue-500' },
-    { type: 'slack', name: 'Slack', color: 'bg-green-500' }
+    { type: 'teams', name: 'Microsoft Teams', icon: teamsIcon },
+    { type: 'outlook', name: 'Outlook', icon: outlookIcon },
+    { type: 'slack', name: 'Slack', icon: slackIcon },
+    { type: 'gmail', name: 'Gmail', icon: gmailIcon }
   ];
+
+  const handleSavePlugin = (config: { type: string; name: string; schema: string }) => {
+    const newPlugin: Plugin = {
+      id: Date.now().toString(),
+      type: config.type as any,
+      profileName: config.name,
+      schema: config.schema,
+      isActive: true,
+      lastSynced: new Date().toISOString()
+    };
+    setPlugins([...plugins, newPlugin]);
+    setShowConfigModal(false);
+  };
 
   return (
     <div className="p-8">
@@ -60,28 +82,27 @@ export default function Plugins() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Plugins</h1>
           <p className="text-gray-600">Manage your integrations and connections</p>
         </div>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+        <button
+          onClick={() => setShowConfigModal(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+        >
           <Plus className="w-5 h-5" />
           <span>Add Plugin</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {pluginTypes.map((plugin) => (
           <div
             key={plugin.type}
             className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
           >
-            <div className="flex items-center gap-4">
-              <div className={`${plugin.color} p-3 rounded-lg text-white`}>
-                {getPluginIcon(plugin.type)}
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">{plugin.name}</h3>
-                <p className="text-sm text-gray-600">
-                  {getPluginCount(plugin.type)} profile{getPluginCount(plugin.type) !== 1 ? 's' : ''} linked
-                </p>
-              </div>
+            <div className="flex flex-col items-center text-center">
+              <img src={plugin.icon} alt={plugin.name} className="w-12 h-12 mb-3" />
+              <h3 className="font-semibold text-gray-900 mb-1">{plugin.name}</h3>
+              <p className="text-sm text-gray-600">
+                {getPluginCount(plugin.type)} profile{getPluginCount(plugin.type) !== 1 ? 's' : ''}
+              </p>
             </div>
           </div>
         ))}
@@ -97,6 +118,7 @@ export default function Plugins() {
             <tr>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Plugin</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Profile Name</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Schema</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Last Synced</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Actions</th>
@@ -107,14 +129,17 @@ export default function Plugins() {
               <tr key={plugin.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="text-gray-600">
-                      {getPluginIcon(plugin.type)}
-                    </div>
+                    <img src={getPluginIcon(plugin.type)} alt={plugin.type} className="w-6 h-6" />
                     <span className="font-medium text-gray-900 capitalize">{plugin.type}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-gray-900">{plugin.profileName}</span>
+                </td>
+                <td className="px-6 py-4">
+                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full capitalize">
+                    {plugin.schema || 'N/A'}
+                  </span>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-2">
@@ -156,6 +181,13 @@ export default function Plugins() {
           </tbody>
         </table>
       </div>
+
+      {showConfigModal && (
+        <PluginConfigModal
+          onClose={() => setShowConfigModal(false)}
+          onSave={handleSavePlugin}
+        />
+      )}
     </div>
   );
 }

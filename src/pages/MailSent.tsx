@@ -4,6 +4,8 @@ import { useState } from 'react';
 
 export default function MailSent() {
   const [selectedMeeting, setSelectedMeeting] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<{ id: string; field: string } | null>(null);
+  const [communications, setCommunications] = useState(mockSentCommunications);
 
   const getProgress = (formats: { status: string }[]) => {
     const sent = formats.filter(f => f.status === 'sent').length;
@@ -15,6 +17,17 @@ export default function MailSent() {
     if (percentage === 100) return 'text-green-600';
     if (percentage === 0) return 'text-gray-400';
     return 'text-blue-600';
+  };
+
+  const handleDoubleClick = (id: string, field: string) => {
+    setEditingField({ id, field });
+  };
+
+  const handleBlur = (id: string, field: string, value: string) => {
+    setCommunications(communications.map(c =>
+      c.meetingId === id ? { ...c, [field]: value } : c
+    ));
+    setEditingField(null);
   };
 
   return (
@@ -36,15 +49,45 @@ export default function MailSent() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {mockSentCommunications.map((comm) => {
+            {communications.map((comm) => {
               const progress = getProgress(comm.formats);
               return (
                 <tr key={comm.meetingId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    <div className="font-medium text-gray-900">{comm.meetingName}</div>
+                    {editingField?.id === comm.meetingId && editingField?.field === 'meetingName' ? (
+                      <input
+                        type="text"
+                        defaultValue={comm.meetingName}
+                        onBlur={(e) => handleBlur(comm.meetingId, 'meetingName', e.target.value)}
+                        autoFocus
+                        className="font-medium text-gray-900 border-b-2 border-blue-500 focus:outline-none"
+                      />
+                    ) : (
+                      <div
+                        className="font-medium text-gray-900 cursor-text"
+                        onDoubleClick={() => handleDoubleClick(comm.meetingId, 'meetingName')}
+                      >
+                        {comm.meetingName}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-gray-600">{comm.projectName}</div>
+                    {editingField?.id === comm.meetingId && editingField?.field === 'projectName' ? (
+                      <input
+                        type="text"
+                        defaultValue={comm.projectName}
+                        onBlur={(e) => handleBlur(comm.meetingId, 'projectName', e.target.value)}
+                        autoFocus
+                        className="text-gray-600 border-b-2 border-blue-500 focus:outline-none"
+                      />
+                    ) : (
+                      <div
+                        className="text-gray-600 cursor-text"
+                        onDoubleClick={() => handleDoubleClick(comm.meetingId, 'projectName')}
+                      >
+                        {comm.projectName}
+                      </div>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
